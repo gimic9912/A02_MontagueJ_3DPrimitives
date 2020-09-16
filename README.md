@@ -1,2 +1,3 @@
-# Simplex_17-18_Spring
-Class repository for DSA2 in semester 2017 spring
+A02 3D Primatives Assignment
+By: Joshua Montague
+Email: jdm3639@rit.edu
