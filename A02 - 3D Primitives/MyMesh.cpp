@@ -121,7 +121,7 @@ void MyMesh::Render(matrix4 a_mProjection, matrix4 a_mView, matrix4 a_mModel)
 {
 	// Use the buffer and shader
 	GLuint nShader = m_pShaderMngr->GetShaderID("Basic");
-	glUseProgram(nShader); 
+	glUseProgram(nShader);
 
 	//Bind the VAO of this object
 	glBindVertexArray(m_VAO);
@@ -133,11 +133,11 @@ void MyMesh::Render(matrix4 a_mProjection, matrix4 a_mView, matrix4 a_mModel)
 	//Final Projection of the Camera
 	matrix4 m4MVP = a_mProjection * a_mView * a_mModel;
 	glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(m4MVP));
-	
+
 	//Solid
 	glUniform3f(wire, -1.0f, -1.0f, -1.0f);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glDrawArrays(GL_TRIANGLES, 0, m_uVertexCount);  
+	glDrawArrays(GL_TRIANGLES, 0, m_uVertexCount);
 
 	//Wire
 	glUniform3f(wire, 1.0f, 0.0f, 1.0f);
@@ -186,15 +186,15 @@ void MyMesh::GenerateCube(float a_fSize, vector3 a_v3Color)
 	//|  |
 	//0--1
 
-	vector3 point0(-fValue,-fValue, fValue); //0
-	vector3 point1( fValue,-fValue, fValue); //1
-	vector3 point2( fValue, fValue, fValue); //2
+	vector3 point0(-fValue, -fValue, fValue); //0
+	vector3 point1(fValue, -fValue, fValue); //1
+	vector3 point2(fValue, fValue, fValue); //2
 	vector3 point3(-fValue, fValue, fValue); //3
 
-	vector3 point4(-fValue,-fValue,-fValue); //4
-	vector3 point5( fValue,-fValue,-fValue); //5
-	vector3 point6( fValue, fValue,-fValue); //6
-	vector3 point7(-fValue, fValue,-fValue); //7
+	vector3 point4(-fValue, -fValue, -fValue); //4
+	vector3 point5(fValue, -fValue, -fValue); //5
+	vector3 point6(fValue, fValue, -fValue); //6
+	vector3 point7(-fValue, fValue, -fValue); //7
 
 	//F
 	AddQuad(point0, point1, point3, point2);
@@ -275,9 +275,49 @@ void MyMesh::GenerateCone(float a_fRadius, float a_fHeight, int a_nSubdivisions,
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	// get half the height, used to center the pivot point (and the position) in the middle of the 3d cone
+	float halfHeight = a_fHeight / 2;
+
+	// the bottom vertex of the cone (base of cone)
+	vector3 bottom = vector3(0, 0, -halfHeight);
+	// the top vertex of the cone (point of cone)
+	vector3 top = vector3(0, 0, halfHeight);
+
+	// the vertices
+	std::vector<vector3> vertices;
+
+	// get the vertices for the base of the cone
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		float rads = (PI * 2) * ((float)i / (float)a_nSubdivisions);
+		float xLoc = cos(rads) * a_fRadius;
+		float yLoc = sin(rads) * a_fRadius;
+		vertices.push_back(vector3(xLoc, yLoc, bottom.z));
+	}
+
+	// draw the triangles for the base of the cone
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		AddTri(bottom, vertices[i], vertices[(i + 1) % a_nSubdivisions]);
+	}
+
+	// reset vertices for the top part of the cone
+	vertices.clear();
+
+	// create the vertices for the top part of the cone (the point)
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		float rads = (PI * 2) * ((float)i / (float)a_nSubdivisions);
+		float xLoc = cos(rads) * a_fRadius;
+		float yLoc = sin(rads) * a_fRadius;
+		vertices.push_back(vector3(xLoc, yLoc, bottom.z));
+	}
+
+	// draw the triangle for the top part of the cone
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		AddTri(top, vertices[(i + 1) % a_nSubdivisions], vertices[i]);
+	}
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
@@ -299,9 +339,72 @@ void MyMesh::GenerateCylinder(float a_fRadius, float a_fHeight, int a_nSubdivisi
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	// get half the height, used to center the pivot point (and the position) in the middle of the 3d cylinder
+	float halfHeight = a_fHeight / 2;
+
+	// the vertices
+	std::vector<vector3> vertices;
+
+	std::vector<float> rads;
+
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		rads.push_back((PI * 2) * ((float)i / (float)a_nSubdivisions));
+	}
+
+	vector3 baseTop = vector3(0, 0, halfHeight);
+	vector3 baseBottom = vector3(0, 0, -halfHeight);
+
+	// draw both bases of the cylinder
+	for (int side = 0; side < 2; side++)
+	{
+		float baseHeight = side == 0 ? -halfHeight : halfHeight;
+		vector3 baseVec = vector3(0, 0, baseHeight);
+
+		for (int i = 0; i < a_nSubdivisions; i++)
+		{
+			float xLoc = cos(rads[i]) * a_fRadius;
+			float yLoc = sin(rads[i]) * a_fRadius;
+			vertices.push_back(vector3(xLoc, yLoc, baseVec.z));
+		}
+
+		for (int i = 0; i < a_nSubdivisions; i++)
+		{
+			// reverse drawning order depending on the base of the cylinder
+			if (side == 1)
+				AddTri(baseVec, vertices[i], vertices[(i + 1) % a_nSubdivisions]);
+			else
+				AddTri(baseVec, vertices[(i + 1) % a_nSubdivisions], vertices[i]);
+		}
+		vertices.clear();
+	}
+
+	// reset vertices for the side parts of the cylinder
+	vertices.clear();
+
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		float xLoc = cos(rads[i]) * a_fRadius;
+		float yLoc = sin(rads[i]) * a_fRadius;
+
+		float xLocNext = cos(rads[(i + 1) % a_nSubdivisions]) * a_fRadius;
+		float yLocNext = sin(rads[(i + 1) % a_nSubdivisions]) * a_fRadius;
+
+		vertices.push_back(vector3(xLoc, yLoc, baseTop.z));
+		vertices.push_back(vector3(xLoc, yLoc, baseBottom.z));
+		vertices.push_back(vector3(xLocNext, yLocNext, baseTop.z));
+		vertices.push_back(vector3(xLocNext, yLocNext, baseBottom.z));
+	}
+
+	for (int i = 0; i < a_nSubdivisions * 4; i += 4)
+	{
+		std::vector<vector3> quadVerts;
+		for (int v = 0; v < 4; v++)
+		{
+			quadVerts.push_back(vertices[i + v]);
+		}
+		AddQuad(quadVerts[0], quadVerts[1], quadVerts[2], quadVerts[3]);
+	}
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
@@ -329,9 +432,52 @@ void MyMesh::GenerateTube(float a_fOuterRadius, float a_fInnerRadius, float a_fH
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fOuterRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	float halfHeight = a_fHeight / 2;
+
+	vector3 baseTop = vector3(0, 0, halfHeight);
+	vector3 baseBottom = vector3(0, 0, -halfHeight);
+
+	std::vector<float> rads;
+	std::vector<vector3> vertices;
+
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		rads.push_back((PI * 2) * ((float)i / (float)a_nSubdivisions));
+	}
+
+	for (int p = 0; p < a_nSubdivisions; p++)
+	{
+		float outX = cos(rads[p]) * a_fOuterRadius;
+		float outY = sin(rads[p]) * a_fOuterRadius;
+		float innerX = cos(rads[p]) * a_fInnerRadius;
+		float innerY = sin(rads[p]) * a_fInnerRadius;
+
+		float nextRad = rads[(p + 1) % a_nSubdivisions];
+		float outXNext = cos(nextRad) * a_fOuterRadius;
+		float outYNext = sin(nextRad) * a_fOuterRadius;
+		float innerXNext = cos(nextRad) * a_fInnerRadius;
+		float innerYNext = sin(nextRad) * a_fInnerRadius;
+
+		vertices.push_back(vector3(outX, outY, baseTop.z));
+		vertices.push_back(vector3(outXNext, outYNext, baseTop.z));
+
+		vertices.push_back(vector3(innerX, innerY, baseTop.z));
+		vertices.push_back(vector3(innerXNext, innerYNext, baseTop.z));
+
+		vertices.push_back(vector3(innerX, innerY, baseBottom.z));
+		vertices.push_back(vector3(innerXNext, innerYNext, baseBottom.z));
+
+		vertices.push_back(vector3(outX, outY, baseBottom.z));
+		vertices.push_back(vector3(outXNext, outYNext, baseBottom.z));
+
+		int vertSize = vertices.size();
+		for (int i = 0; i < vertSize; i += 2)
+		{
+			AddQuad(vertices[i % vertSize], vertices[(i + 1) % vertSize], vertices[(i + 2) % vertSize], vertices[(i + 3) % vertSize]);
+		}
+
+		vertices.clear();
+	}
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
@@ -380,15 +526,57 @@ void MyMesh::GenerateSphere(float a_fRadius, int a_nSubdivisions, vector3 a_v3Co
 		GenerateCube(a_fRadius * 2.0f, a_v3Color);
 		return;
 	}
-	if (a_nSubdivisions > 6)
-		a_nSubdivisions = 6;
+	if (a_nSubdivisions > 11)
+		a_nSubdivisions = 11;
 
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	std::vector<float> rads;
+	std::vector<vector3> vertices;
+
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		rads.push_back((PI * 2) * ((float)i / (float)a_nSubdivisions));
+	}
+
+	vector3 sphereTop = vector3(0, 0, a_fRadius);
+	vector3 sphereBottom = vector3(0, 0, -a_fRadius);
+
+	float heightOfEachRing = (a_fRadius * 2) / a_nSubdivisions;
+
+	// for each piece (slices)
+	for (int p = 0; p < a_nSubdivisions; p++)
+	{
+		// for each face in a slice
+		for (int f = 0; f <= a_nSubdivisions; f++)
+		{
+			float currentHeight = sphereBottom.z + (heightOfEachRing * f);
+			//float nextHeight = sphereBottom.z + (heightOfEachRing * (f + 1));
+
+			float radiusForCurrentHeight = cos(asin(currentHeight / a_fRadius)) * a_fRadius;
+			//float radiusForNextHeight = cos(asin(nextHeight / a_fRadius)) * a_fRadius;
+
+			float x = cos(rads[p]) * radiusForCurrentHeight;
+			float y = sin(rads[p]) * radiusForCurrentHeight;
+			float z = currentHeight;
+
+			float radsOfNext = rads[(p + 1) % a_nSubdivisions];
+			float xNext = cos(radsOfNext) * radiusForCurrentHeight;
+			float yNext = sin(radsOfNext) * radiusForCurrentHeight;
+
+			vertices.push_back(vector3(x, y, z));
+			vertices.push_back(vector3(xNext, yNext, z));
+		}
+
+		int vertSize = vertices.size();
+		for (int i = 0; i < vertSize - 2; i += 2)
+		{
+			AddQuad(vertices[i % vertSize], vertices[(i + 1) % vertSize], vertices[(i + 2) % vertSize], vertices[(i + 3) % vertSize]);
+		}
+
+		vertices.clear();
+	}
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
