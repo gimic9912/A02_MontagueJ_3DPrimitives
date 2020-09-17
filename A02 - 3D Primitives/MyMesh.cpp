@@ -396,6 +396,7 @@ void MyMesh::GenerateCylinder(float a_fRadius, float a_fHeight, int a_nSubdivisi
 		vertices.push_back(vector3(xLocNext, yLocNext, baseBottom.z));
 	}
 
+	// draw quads from vertices
 	for (int i = 0; i < a_nSubdivisions * 4; i += 4)
 	{
 		std::vector<vector3> quadVerts;
@@ -440,24 +441,29 @@ void MyMesh::GenerateTube(float a_fOuterRadius, float a_fInnerRadius, float a_fH
 	std::vector<float> rads;
 	std::vector<vector3> vertices;
 
+	// get the rads of the divisions
 	for (int i = 0; i < a_nSubdivisions; i++)
 	{
 		rads.push_back((PI * 2) * ((float)i / (float)a_nSubdivisions));
 	}
 
+	
 	for (int p = 0; p < a_nSubdivisions; p++)
 	{
+		// calculate the vertices
 		float outX = cos(rads[p]) * a_fOuterRadius;
 		float outY = sin(rads[p]) * a_fOuterRadius;
 		float innerX = cos(rads[p]) * a_fInnerRadius;
 		float innerY = sin(rads[p]) * a_fInnerRadius;
 
+		// calculate the vertices for the next
 		float nextRad = rads[(p + 1) % a_nSubdivisions];
 		float outXNext = cos(nextRad) * a_fOuterRadius;
 		float outYNext = sin(nextRad) * a_fOuterRadius;
 		float innerXNext = cos(nextRad) * a_fInnerRadius;
 		float innerYNext = sin(nextRad) * a_fInnerRadius;
 
+		// add all vertices to the vector
 		vertices.push_back(vector3(outX, outY, baseTop.z));
 		vertices.push_back(vector3(outXNext, outYNext, baseTop.z));
 
@@ -470,6 +476,7 @@ void MyMesh::GenerateTube(float a_fOuterRadius, float a_fInnerRadius, float a_fH
 		vertices.push_back(vector3(outX, outY, baseBottom.z));
 		vertices.push_back(vector3(outXNext, outYNext, baseBottom.z));
 
+		// construct the quads
 		int vertSize = vertices.size();
 		for (int i = 0; i < vertSize; i += 2)
 		{
@@ -507,6 +514,8 @@ void MyMesh::GenerateTorus(float a_fOuterRadius, float a_fInnerRadius, int a_nSu
 	Release();
 	Init();
 
+	// This code doesn't work, I've been having some difficulties with this shape
+
 	float torusRadius = a_fOuterRadius - a_fInnerRadius;
 
 	std::vector<float> rads;
@@ -541,6 +550,7 @@ void MyMesh::GenerateTorus(float a_fOuterRadius, float a_fInnerRadius, int a_nSu
 		}
 	}
 
+	// build the quads for the torus
 	int ab = (vertices.size() / 2);
 	for (int i = 0; i < ab; i++)
 	{
@@ -572,6 +582,7 @@ void MyMesh::GenerateSphere(float a_fRadius, int a_nSubdivisions, vector3 a_v3Co
 	std::vector<float> rads;
 	std::vector<vector3> vertices;
 
+	// calculate all the rads for each division
 	for (int i = 0; i < a_nSubdivisions; i++)
 	{
 		rads.push_back((PI * 2) * ((float)i / (float)a_nSubdivisions));
@@ -591,21 +602,26 @@ void MyMesh::GenerateSphere(float a_fRadius, int a_nSubdivisions, vector3 a_v3Co
 			float currentHeight = sphereBottom.z + (heightOfEachRing * f);
 			//float nextHeight = sphereBottom.z + (heightOfEachRing * (f + 1));
 
+			// get the radius for the currect height of the face
 			float radiusForCurrentHeight = cos(asin(currentHeight / a_fRadius)) * a_fRadius;
 			//float radiusForNextHeight = cos(asin(nextHeight / a_fRadius)) * a_fRadius;
 
+			// calculate the vertex position
 			float x = cos(rads[p]) * radiusForCurrentHeight;
 			float y = sin(rads[p]) * radiusForCurrentHeight;
 			float z = currentHeight;
 
+			// calculate the vertex position of the adjecent face
 			float radsOfNext = rads[(p + 1) % a_nSubdivisions];
 			float xNext = cos(radsOfNext) * radiusForCurrentHeight;
 			float yNext = sin(radsOfNext) * radiusForCurrentHeight;
 
+			// add the vertices to the list
 			vertices.push_back(vector3(x, y, z));
 			vertices.push_back(vector3(xNext, yNext, z));
 		}
 
+		// build the quads
 		int vertSize = vertices.size();
 		for (int i = 0; i < vertSize - 2; i += 2)
 		{
