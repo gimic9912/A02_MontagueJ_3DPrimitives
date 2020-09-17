@@ -514,49 +514,54 @@ void MyMesh::GenerateTorus(float a_fOuterRadius, float a_fInnerRadius, int a_nSu
 	Release();
 	Init();
 
-	// This code doesn't work, I've been having some difficulties with this shape
+	float ringRadius = (a_fOuterRadius - a_fInnerRadius) / 2;
+	float averageRadius = (a_fOuterRadius + a_fInnerRadius) / 2;
+	
+	std::vector<std::vector<vector3>> allRings;
 
-	float torusRadius = a_fOuterRadius - a_fInnerRadius;
-
-	std::vector<float> rads;
-	std::vector<vector3> vertices;
-
-	float pieceRadSize = (PI * 2) * ((float)1 / (float)a_nSubdivisionsA);
+	float radsX = 0;
+	float changeInRadsX = 2 * PI / a_nSubdivisionsA;
 
 	for (int i = 0; i < a_nSubdivisionsA; i++)
 	{
-		rads.push_back(i * pieceRadSize);
+		float radsY = 0;
+		float changeInRadsY = 2 * PI / a_nSubdivisionsB;
+		std::vector<vector3> ring;
+
+		for (int a = 0; a < a_nSubdivisionsB; a++)
+		{
+			// calculate the pos of the vertex
+			float y = ringRadius * sin(radsY);
+			float newRadius = averageRadius + ringRadius * cos(radsY);
+			float x = newRadius * cos(radsX);
+			float z = newRadius * sin(radsX);
+
+			// add the vertex to the ring
+			ring.push_back(vector3(x, y, z));
+
+			radsY += changeInRadsY;
+		}
+		// add ring to rings
+		allRings.push_back(ring);
+
+		radsX += changeInRadsX;
+
+		// clear the ring for the next
+		ring.clear();
 	}
 
-	// for each piece (slice)
-	for (int p = 0; p < a_nSubdivisionsA; p++)
+	// draw the quads for the rings
+	for (int a = 0; a < a_nSubdivisionsA; a++)
 	{
-		float radiusFromCenterOfPieceToCenterOfObject = torusRadius + a_fInnerRadius;
-		float centPX = (cos(rads[p]) * radiusFromCenterOfPieceToCenterOfObject);
-		float centPY = (sin(rads[p]) * radiusFromCenterOfPieceToCenterOfObject);
-		vector3 centerOfPiece = vector3(centPX, centPY, 0);
-
-		// for each face in a slice
-		for (int f = 0; f < a_nSubdivisionsB; f++)
+		for (int b = 0; b < a_nSubdivisionsB; b++)
 		{
-			float radOfSlice = (PI * 2) * ((float)f / (float)a_nSubdivisionsB);
-			//float radiusFromSliceToCenterOfObject = radiusFromCenterOfPieceToCenterOfObject + cos(radOfSlice);
-
-			float x = centerOfPiece.x + cos(radOfSlice);
-			float y = centerOfPiece.y + sin(radOfSlice);
-			float z = sin(radOfSlice);
-
-			vertices.push_back(vector3(x, y, z));
+			vector3 ringVertex1 = allRings[a][b];
+			vector3 ringVertex2 = allRings[a][(b + 1) % a_nSubdivisionsB];
+			vector3 ringVertex3 = allRings[(a + 1) % a_nSubdivisionsA][b];
+			vector3 ringVertex4 = allRings[(a + 1) % a_nSubdivisionsA][(b + 1) % a_nSubdivisionsB];
+			AddQuad(ringVertex1, ringVertex2, ringVertex3, ringVertex4);
 		}
 	}
-
-	// build the quads for the torus
-	int ab = (vertices.size() / 2);
-	for (int i = 0; i < ab; i++)
-	{
-		AddQuad(vertices[i], vertices[(i + a_nSubdivisionsB) % vertices.size()], vertices[i + 1], vertices[(i + a_nSubdivisionsB + 1) % vertices.size()]);
-	}
-	
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
