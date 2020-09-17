@@ -507,9 +507,46 @@ void MyMesh::GenerateTorus(float a_fOuterRadius, float a_fInnerRadius, int a_nSu
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fOuterRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	float torusRadius = a_fOuterRadius - a_fInnerRadius;
+
+	std::vector<float> rads;
+	std::vector<vector3> vertices;
+
+	float pieceRadSize = (PI * 2) * ((float)1 / (float)a_nSubdivisionsA);
+
+	for (int i = 0; i < a_nSubdivisionsA; i++)
+	{
+		rads.push_back(i * pieceRadSize);
+	}
+
+	// for each piece (slice)
+	for (int p = 0; p < a_nSubdivisionsA; p++)
+	{
+		float radiusFromCenterOfPieceToCenterOfObject = torusRadius + a_fInnerRadius;
+		float centPX = (cos(rads[p]) * radiusFromCenterOfPieceToCenterOfObject);
+		float centPY = (sin(rads[p]) * radiusFromCenterOfPieceToCenterOfObject);
+		vector3 centerOfPiece = vector3(centPX, centPY, 0);
+
+		// for each face in a slice
+		for (int f = 0; f < a_nSubdivisionsB; f++)
+		{
+			float radOfSlice = (PI * 2) * ((float)f / (float)a_nSubdivisionsB);
+			//float radiusFromSliceToCenterOfObject = radiusFromCenterOfPieceToCenterOfObject + cos(radOfSlice);
+
+			float x = centerOfPiece.x + cos(radOfSlice);
+			float y = centerOfPiece.y + sin(radOfSlice);
+			float z = sin(radOfSlice);
+
+			vertices.push_back(vector3(x, y, z));
+		}
+	}
+
+	int ab = (vertices.size() / 2);
+	for (int i = 0; i < ab; i++)
+	{
+		AddQuad(vertices[i], vertices[(i + a_nSubdivisionsB) % vertices.size()], vertices[i + 1], vertices[(i + a_nSubdivisionsB + 1) % vertices.size()]);
+	}
+	
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
